@@ -1,0 +1,92 @@
+================================================================================
+PRACTICAL 3: MAPREDUCE - WORD COUNT AND CHARACTER COUNT
+================================================================================
+
+1. HOW TO EXECUTE THE CODE:
+---------------------------
+METHOD A (Simple Script):
+        python word_count.py
+
+METHOD B (PowerShell Pipe - Real MapReduce Simulation):
+        Get-Content input.txt | python word_mapper.py | sort | python word_reducer.py
+
+2. ENHANCED EXAMPLE (The "Library" Analogy):
+--------------------------------------------
+Imagine you have a huge library with thousands of books and you want to count how many times the word "Science" appears.
+
+- THE MAPPER (The Students): You hire 100 students. Each student takes one book. Every time they see "Science", they write "Science: 1" on a sticky note. (Each student works independently and in parallel).
+- THE SHUFFLE/SORT (The Table): All students put their sticky notes on a giant table and group them so all "Science" notes are in one pile. This makes it easy for the next step.
+- THE REDUCER (The Counter): You hire one person to count the number of notes in the "Science" pile. If there are 500 notes, the final answer is "Science: 500".
+
+3. SIMPLIFIED CONCEPT EXPLANATION:
+----------------------------------
+MapReduce is a programming model used to solve big data problems by breaking them into two simple phases:
+
+1. MAP (Divide): You take the input and turn it into many small "Key-Value" pairs.
+   - Input: "Hello World Hello"
+   - Map Output: (Hello, 1), (World, 1), (Hello, 1)
+
+2. SORT (Group): You organize the data so all identical keys are sitting next to each other. This is usually handled by the system (or the `| sort` command in our case).
+
+3. REDUCE (Combine): You look at each group and sum up the numbers to get the final total.
+   - Reduce Output: (Hello, 2), (World, 1)
+
+4. DETAILED CODE SNIPPET EXPLANATION (For Examiner):
+----------------------------------------------------
+
+--- MAPPER (word_mapper.py) ---
+
+[CODE]
+import sys
+for line in sys.stdin:
+    line = line.strip()
+    for word in line.split():
+        print(f"{word.lower()}\t1")
+[EXPLANATION]
+1. `sys.stdin`: This allows the script to read data line-by-line as it comes through the pipe `|`. It is like an open ear listening to the file.
+2. `line.strip()`: Removes any accidental extra spaces or newline characters from the edges of the line.
+3. `line.split()`: Breaks a whole sentence into a list of individual words.
+4. `print(f"{word.lower()}\t1")`: This is the heart of the Mapper. It outputs each word in lowercase followed by a "1", separated by a Tab (`\t`). The Reducer will read this exact format later.
+
+--- REDUCER (word_reducer.py) ---
+
+[CODE]
+current_word = None
+current_count = 0
+for line in sys.stdin:
+    word, count = line.strip().split('\t')
+    count = int(count)
+[EXPLANATION]
+1. `current_word`: We use this to remember which word we are currently counting.
+2. `split('\t')`: We take the incoming line from the sorted list and split it back into the `word` and the `count` (which is 1).
+3. `int(count)`: We convert the string "1" into a real number so we can add it.
+
+[CODE]
+if current_word == word:
+    current_count += count
+else:
+    if current_word:
+        print(f"{current_word}\t{current_count}")
+    current_word = word
+    current_count = count
+[EXPLANATION]
+1. **The Logic**: Because the input is **SORTED**, all "Hello"s will come one after another. 
+2. `if current_word == word`: If the next word is still "Hello", we just keep adding to the total (`current_count += 1`).
+3. `else`: If the next word is "World", it means we have finished counting all "Hello"s. We print the total for "Hello" and then start a new count for "World".
+
+5. VIVA QUESTIONS AND ANSWERS:
+------------------------------
+Q1: Why is MapReduce called "Scalable"?
+A: Because if the data size doubles, you don't need a super-computer; you can just add more cheap computers (Mappers) to handle the extra books.
+
+Q2: What is the role of 'sys.stdin' and 'sys.stdout'?
+A: `sys.stdin` is how the script "listens" to data being piped in. `sys.stdout` (via `print`) is how it "talks" or sends data to the next script in the pipeline.
+
+Q3: Why is sorting important between Mapper and Reducer?
+A: The Reducer logic depends on identical keys being adjacent. Without sorting, the Reducer wouldn't know when a word's count is actually finished.
+
+Q4: What is a "Key-Value" pair in this context?
+A: The 'Key' is the word (e.g., "apple") and the 'Value' is the count (e.g., 1).
+
+Q5: Can MapReduce find the maximum number in a dataset?
+A: Yes. The Mapper would output all numbers, and the Reducer would compare them and only keep the largest one seen so far.

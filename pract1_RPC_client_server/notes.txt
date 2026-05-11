@@ -1,0 +1,105 @@
+================================================================================
+PRACTICAL 1: REMOTE PROCEDURE CALL (RPC) - FACTORIAL CALCULATION
+================================================================================
+
+1. HOW TO EXECUTE THE CODE:
+---------------------------
+Step 1: Open a terminal and run the server:
+        python server.py
+        (You should see "Server is running on port 8000...")
+
+Step 2: Open a SECOND terminal and run the client:
+        python client.py
+
+Step 3: When the client asks "Enter a number:", type a number (e.g., 5) and press Enter.
+
+2. ENHANCED EXAMPLE (The "Kitchen" Analogy):
+--------------------------------------------
+Imagine you are a Waiter (Client) and there is a Chef (Server) in the kitchen.
+- You want to know the factorial of 5.
+- You don't know how to cook it yourself.
+- You shout through a window: "Hey Chef, please calculate factorial of 5!" (This is the RPC Call).
+- The Chef does the hard work in the kitchen and shouts back: "It's 120!" (This is the Response).
+- Even though the Chef is in a different room (different process/machine), it feels like you just got the answer instantly.
+- The window you shouted through is like the "Port 8000".
+
+3. SIMPLIFIED CONCEPT EXPLANATION:
+----------------------------------
+Remote Procedure Call (RPC) is a technology that allows one computer program to "call" or "trigger" a function in another program (which might be on a different computer) as if it were a local function.
+
+Normally, when you call `calculate_factorial(5)`, your own computer does the math. In RPC, your computer sends a message over the network saying "Please run this function for me," and another computer does the math and sends the result back. It handles all the complex network code (TCP/IP, Sockets, Data Formatting) automatically.
+
+Key Terms:
+- XML-RPC: The language used to pack the request (XML) and the transport method (HTTP).
+- Port 8000: The specific "door" on the server computer where this service is listening.
+
+4. DETAILED CODE SNIPPET EXPLANATION (For Examiner):
+----------------------------------------------------
+
+--- SERVER SIDE ---
+
+[CODE]
+from xmlrpc.server import SimpleXMLRPCServer
+from xmlrpc.server import SimpleXMLRPCRequestHandler
+[EXPLANATION]
+We import `SimpleXMLRPCServer` to create the server that listens for calls, and `SimpleXMLRPCRequestHandler` to handle the specific details of how HTTP requests are received.
+
+[CODE]
+class RequestHandler(SimpleXMLRPCRequestHandler):
+    rpc_paths = ('/api/v1/rpc_handler',)
+[EXPLANATION]
+This class restricts the server to only listen for RPC calls on a specific URL path: `/api/v1/rpc_handler`. This is a professional way to organize APIs so that different services can run on the same server at different "addresses".
+
+[CODE]
+class RPCServer:
+    def calculate_factorial(self, n):
+        if n < 0:
+            raise ValueError("Input must be a non-negative integer.")
+        result = 1
+        for i in range(1, n + 1):
+            result *= i
+        return str(result)
+[EXPLANATION]
+This is our logic class. 
+1. `if n < 0`: We add error checking to ensure the input is valid.
+2. `result = 1...`: A standard loop to calculate the factorial (e.g., 5! = 5*4*3*2*1).
+3. `return str(result)`: We convert the final number to a string. This is done because XML-RPC has size limits for integers, and a factorial (like 100!) can become a huge number that only a string can hold.
+
+[CODE]
+with SimpleXMLRPCServer(('localhost', 8000), requestHandler=RequestHandler) as server:
+    server.register_introspection_functions()
+    server.register_instance(RPCServer())
+    print("Server is running on port 8000...")
+    server.serve_forever()
+[EXPLANATION]
+1. `SimpleXMLRPCServer(('localhost', 8000)...)`: Opens a communication channel on the local machine at port 8000 using our custom `RequestHandler`.
+2. `register_introspection_functions()`: This allows the client to "ask" the server what functions it has available (like an automated menu).
+3. `register_instance(RPCServer())`: This creates an object of our class and tells the server to use it to answer calls.
+4. `serve_forever()`: This is the main loop that keeps the server alive and waiting for requests.
+
+--- CLIENT SIDE ---
+
+[CODE]
+with xmlrpc.client.ServerProxy("http://localhost:8000/api/v1/rpc_handler") as proxy:
+    n = int(input("Enter a number: "))
+    result = proxy.calculate_factorial(n)
+[EXPLANATION]
+1. `ServerProxy(...)`: Creates a "Stand-in" or "Proxy" object. Note that the URL matches exactly the path we defined in the server's `RequestHandler`.
+2. `proxy.calculate_factorial(n)`: This looks like a local function call, but it actually triggers a network request. The value `n` is "Marshalled" (converted to XML), sent to the server, and the result is "Unmarshalled" back into the `result` variable.
+
+5. VIVA QUESTIONS AND ANSWERS:
+------------------------------
+Q1: What is the main advantage of RPC?
+A: It hides the complexity of network programming. The developer can write code as if everything is happening on one machine, while the RPC library handles the communication.
+
+Q2: Why do we use a 'Proxy' in the client?
+A: The Proxy acts as a middleman. It takes the function call, converts it into a network message (Marshalling), sends it, and then converts the response back (Unmarshalling) for the user.
+
+Q3: What is "Marshalling" and "Unmarshalling"?
+A: Marshalling is the process of converting data (like an integer) into a format suitable for transmission (like XML). Unmarshalling is converting it back into usable data.
+
+Q4: What happens if the server path doesn't match the client path?
+A: The client will receive a "404 Not Found" error because the server is only listening on the specific path defined in `rpc_paths`.
+
+Q5: Is RPC synchronous or asynchronous?
+A: Usually, it is synchronous (Blocking). The client waits for the server to finish and send the result back before moving to the next line of code.

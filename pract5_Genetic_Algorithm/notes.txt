@@ -1,0 +1,111 @@
+================================================================================
+PRACTICAL 5: GENETIC ALGORITHM FOR NEURAL NETWORK OPTIMIZATION
+================================================================================
+
+1. HOW TO EXECUTE THE CODE:
+---------------------------
+Step 1: Ensure you have the libraries: `pip install numpy scikit-learn`
+Step 2: Run the script: `python genetic_algo.py`
+Step 3: Watch the "MSE" (Mean Squared Error) go down over each generation. Lower is better!
+
+2. ENHANCED EXAMPLE (The "Recipe" Analogy):
+-------------------------------------------
+Imagine you want to bake the perfect cake (Neural Network), but you don't know the best "Baking Temp" and "Sugar Amount" (Hyperparameters).
+
+- GENETIC ALGORITHM (The Baker):
+  1. Start with 10 random recipes (Initial Population).
+  2. Bake 10 cakes and taste them (Fitness Evaluation).
+  3. Throw away the bad ones and keep the delicious ones (Selection).
+  4. Take two good recipes and mix them—e.g., take the Temp from Recipe A and Sugar from Recipe B (Crossover).
+  5. Occasionally, change something randomly, like adding a pinch of salt just to see if it's better (Mutation).
+  6. Repeat for 10 generations until you find the perfect recipe!
+
+3. SIMPLIFIED CONCEPT EXPLANATION:
+----------------------------------
+This practical combines two powerful AI techniques:
+1. NEURAL NETWORKS (The Brain): A model that learns patterns from data. For it to work well, it needs good settings (Hyperparameters) like "learning rate" or "number of neurons".
+2. GENETIC ALGORITHM (The Optimizer): An evolution-inspired tool that finds the best settings for the Neural Network automatically. Instead of us guessing the best settings, the GA "evolves" them.
+
+4. DETAILED CODE SNIPPET EXPLANATION (For Examiner):
+----------------------------------------------------
+
+[CODE]
+def fitness(params):
+    pop_size, crossover_rate, mutation_rate = params
+    hidden_size = int(pop_size / 2)
+    learning_rate = mutation_rate
+[EXPLANATION]
+This function evaluates how "good" a solution is. It takes the GA's parameters and "maps" them to the Neural Network's parameters. For example, it uses the `pop_size` to decide the number of neurons in the hidden layer.
+
+[CODE]
+model = MLPRegressor(
+    hidden_layer_sizes=(hidden_size,),
+    learning_rate_init=learning_rate,
+    max_iter=int(200 + crossover_rate * 500)
+)
+[EXPLANATION]
+This builds the Neural Network.
+1. `MLPRegressor`: A Multi-Layer Perceptron used for predicting continuous values.
+2. `hidden_layer_sizes`: Defines how many "neurons" are in the brain.
+3. `learning_rate_init`: Defines how fast the brain should learn.
+
+[CODE]
+model.fit(X_train, y_train)
+y_pred = model.predict(X_test)
+return mean_squared_error(y_test, y_pred)
+[EXPLANATION]
+1. `fit`: The Neural Network "studies" the training data.
+2. `predict`: We test the network on new data.
+3. `mean_squared_error`: We calculate the "Error Score". The Genetic Algorithm will try to make this score as small as possible.
+
+[CODE]
+def create_individual():
+    return [
+        random.randint(50, 100),        # population size
+        random.uniform(0.6, 0.9),       # crossover rate
+        random.uniform(0.01, 0.1)       # mutation rate
+    ]
+[EXPLANATION]
+This function generates a single "Individual" (a potential solution). Each individual is a list containing a random population size, crossover rate, and mutation rate for the Neural Network.
+
+[CODE]
+for generation in range(10):
+    scores = [(fitness(ind), ind) for ind in population]
+    scores.sort(key=lambda x: x[0])
+    selected = [ind for (_, ind) in scores[:5]]
+[EXPLANATION]
+This is the Main Evolution Loop:
+1. It calculates the fitness (error) for every individual.
+2. It sorts them so the best (lowest error) are at the top.
+3. Selection: It keeps only the Top 5 best individuals to be parents for the next generation.
+
+[CODE]
+def crossover(p1, p2):
+    return [random.choice([p1[0], p2[0]]), random.choice([p1[1], p2[1]]), ...]
+[EXPLANATION]
+Creates a "child" set of settings by randomly picking traits from two parents. This allows the best parts of two different solutions to combine and create an even better one.
+
+[CODE]
+def mutate(ind):
+    if random.random() < 0.3:
+        ind[0] = random.randint(50, 100)
+    return ind
+[EXPLANATION]
+Occasionally, we make a random change to a parameter. This ensures the GA explores new "out of the box" ideas and doesn't get stuck in a rut.
+
+5. VIVA QUESTIONS AND ANSWERS:
+------------------------------
+Q1: What are Hyperparameters?
+A: These are the settings of a machine learning model that are decided *before* training starts (like learning rate or number of hidden layers).
+
+Q2: Why use a Genetic Algorithm instead of just trying every setting?
+A: Because there are millions of possible combinations. Trying them all would take years. GA is a "smart search" that finds a great solution much faster.
+
+Q3: What does MSE (Mean Squared Error) represent?
+A: It represents the average mistake the model makes. A low MSE means the model is very accurate.
+
+Q4: What is "Elitism"?
+A: It is the practice of carrying over the very best individuals from one generation to the next without any changes, ensuring we never lose our best solution.
+
+Q5: What is MLPRegressor?
+A: It is a type of Neural Network in scikit-learn that uses backpropagation to learn how to predict numbers (Regression).

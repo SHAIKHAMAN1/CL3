@@ -1,0 +1,102 @@
+================================================================================
+PRACTICAL 2: REMOTE METHOD INVOCATION (RMI) - STRING CONCATENATION
+================================================================================
+
+1. HOW TO EXECUTE THE CODE:
+---------------------------
+Step 1: Start the Name Server (The Directory Service):
+        python -m Pyro4.naming
+
+Step 2: Start the Server (The Service Provider) in a NEW terminal:
+        python server.py
+
+Step 3: Start the Client (The User) in a THIRD terminal:
+        python client.py
+
+2. ENHANCED EXAMPLE (The "Phonebook" Analogy):
+----------------------------------------------
+Imagine a Phonebook (Name Server) and a business called "The Joiner" (Server).
+1. The Business (Server) registers its name "string.concatenation" and its phone number (URI) in the Phonebook (Name Server).
+2. The Customer (Client) doesn't know the number, so they call the Phonebook and ask: "What is the phone number for 'string.concatenation'?"
+3. The Phonebook gives them the number (URI).
+4. The Customer calls the Business directly to join two strings together.
+5. In our code, we also write the number down on a piece of paper (`server_uri.txt`) just in case the Phonebook isn't reachable.
+
+3. SIMPLIFIED CONCEPT EXPLANATION:
+----------------------------------
+Remote Method Invocation (RMI) is the object-oriented version of RPC. Instead of just calling a "function", you are interacting with a specific "Object" that exists on another computer. 
+
+In Python, we use the `Pyro4` library. It allows a class instance (Object) to stay alive on the Server, and the Client can call methods on that object as if it were stored in its own RAM.
+
+Key Differences:
+- RPC: "Call this function."
+- RMI: "Tell this specific object to do something."
+
+4. DETAILED CODE SNIPPET EXPLANATION (For Examiner):
+----------------------------------------------------
+
+--- SERVER SIDE ---
+
+[CODE]
+@Pyro4.expose
+class StringConcatenationServer:
+    def concatenate_strings(self, str1, str2):
+        result = str1 + str2
+        return result
+[EXPLANATION]
+1. `@Pyro4.expose`: This is a security guard. In modern Pyro4, you must explicitly "expose" classes or methods. Otherwise, a hacker could try to call dangerous internal Python functions.
+2. `concatenate_strings`: A simple method that takes two inputs and uses the `+` operator to join them.
+
+[CODE]
+daemon = Pyro4.Daemon()  
+ns = Pyro4.locateNS()  
+[EXPLANATION]
+1. `Pyro4.Daemon()`: This is the server's "Receptionist". It stays at the desk, listens for incoming network calls, and routes them to the correct object.
+2. `Pyro4.locateNS()`: This looks for the Name Server (the directory service) running on your local network.
+
+[CODE]
+uri = daemon.register(server)
+ns.register("string.concatenation", uri)
+[EXPLANATION]
+1. `daemon.register(server)`: This gives the server object a unique "Phone Number" or "Identity" called a **URI**.
+2. `ns.register(...)`: This links the human-readable name "string.concatenation" to that URI in the Name Server's records.
+
+[CODE]
+with open("server_uri.txt", "w") as f:
+    f.write(str(uri))
+daemon.requestLoop()
+[EXPLANATION]
+1. `with open(...)`: As a backup, we save the URI into a text file. If the Name Server fails, the client can still read this file to find the server.
+2. `daemon.requestLoop()`: This is the "Infinite Loop" that keeps the server alive. Without this, the script would finish and the server would shut down immediately.
+
+--- CLIENT SIDE ---
+
+[CODE]
+with open("server_uri.txt", "r") as f:
+    uri = f.read()
+server = Pyro4.Proxy(uri)
+[EXPLANATION]
+1. `f.read()`: The client reads the "Phone Number" (URI) from the file we created earlier.
+2. `Pyro4.Proxy(uri)`: This creates a "Remote Controller" (Proxy) for the server object. The client uses this proxy to send commands to the real object on the server.
+
+[CODE]
+result = server.concatenate_strings(str1, str2)
+[EXPLANATION]
+The client calls the method on the proxy. Pyro4 takes the strings `str1` and `str2`, sends them over the network to the server, gets the joined result back, and presents it to the user.
+
+5. VIVA QUESTIONS AND ANSWERS:
+------------------------------
+Q1: What is Pyro4?
+A: It's a Python library that enables objects to talk to each other over a network using RMI.
+
+Q2: What is a URI in Pyro4?
+A: It stands for Uniform Resource Identifier. It is the exact network address of the object (e.g., `PYRO:obj_123@localhost:5000`).
+
+Q3: What is the role of the Name Server?
+A: It acts as a directory service where servers register their objects and clients find them by name instead of needing to know the URI.
+
+Q4: What happens if '@Pyro4.expose' is missing?
+A: Pyro4 will refuse to call the method for security reasons, and the client will get an `AttributeError`.
+
+Q5: Why do we use 'daemon.requestLoop()'?
+A: To put the server in an idle state where it just waits for incoming requests. Without it, the program ends instantly.

@@ -1,0 +1,87 @@
+================================================================================
+PRACTICAL 7: ARTIFICIAL IMMUNE RECOGNITION SYSTEM (AIRS)
+================================================================================
+
+1. HOW TO EXECUTE THE CODE:
+---------------------------
+Step 1: Install numpy: `pip install numpy`
+Step 2: Run the script: `python ais.py`
+Step 3: Check the "Accuracy". Since it uses random data, a value above 0.50 is usually expected for a 2-class problem.
+
+2. ENHANCED EXAMPLE (The "Security Guard" Analogy):
+---------------------------------------------------
+Imagine you are training Security Guards (Detectors) to recognize "Thieves" (Class 1) and "Customers" (Class 0).
+
+1. TRAINING: You show the guards 100 photos. 
+   - Instead of memorizing all 100 photos (which takes too much memory), the guards learn the "general look" of a thief.
+   - You might end up with only 10 "Expert Guards" (Detectors) who know exactly what a thief looks like.
+2. PREDICTION: A new person walks into the store.
+   - You ask your 10 Expert Guards: "Who does this person look like most?"
+   - If the person looks most like the "Thief" prototype, the guard shouts "Thief!".
+   - This is much faster than checking the new person against 100 old photos.
+
+3. SIMPLIFIED CONCEPT EXPLANATION:
+----------------------------------
+Artificial Immune Recognition System (AIRS) is a supervised learning algorithm based on the principles of the Artificial Immune System. It is primarily used for classification.
+
+How it works:
+1. It creates a pool of "Detectors" (Antibodies).
+2. During training, these detectors are evolved to represent the different classes in the training data.
+3. For a new sample, the algorithm finds the nearest detector (Memory Cell) and assigns its label to the sample. It's like k-NN, but with a much smaller and smarter set of data points.
+
+4. DETAILED CODE SNIPPET EXPLANATION (For Examiner):
+----------------------------------------------------
+
+[CODE]
+class AIRS:
+    def __init__(self, num_detectors=10, mutation_rate=0.1):
+        self.num_detectors = num_detectors
+        self.mutation_rate = mutation_rate
+[EXPLANATION]
+We initialize the AIRS model. 
+1. `num_detectors`: How many "Memory Cells" or "Prototypes" we want to create to represent our data.
+2. `mutation_rate`: How much the detectors should change during training to adapt to the data.
+
+[CODE]
+def train(self, X, y):
+    indices = np.random.choice(len(X), self.num_detectors, replace=False)
+    self.detectors = X[indices]
+    self.detector_labels = y[indices]
+[EXPLANATION]
+1. `np.random.choice`: We start by picking random samples from our dataset to act as our initial "Detectors".
+2. `self.detectors`: We store the feature values (the "look") of these detectors.
+3. `self.detector_labels`: We store whether each detector represents Class 0 or Class 1.
+
+[CODE]
+for i in range(len(self.detectors)):
+    if np.random.rand() < self.mutation_rate:
+        self.detectors[i] += np.random.normal(0, 0.1, size=...)
+[EXPLANATION]
+This is "Somatic Hypermutation". We slightly change the values of our detectors. This allows the detectors to move towards the center of a group of data points, making them better representatives of that class.
+
+[CODE]
+def predict(self, X):
+    for sample in X:
+        distances = np.linalg.norm(self.detectors - sample, axis=1)
+        predictions.append(self.detector_labels[np.argmin(distances)])
+[EXPLANATION]
+1. `np.linalg.norm`: Calculates the "Euclidean Distance" (the straight-line distance) between a new sample and all our trained detectors.
+2. `np.argmin(distances)`: Finds the index of the detector that is closest to the sample.
+3. `predictions.append`: We assign the label of the closest detector to the new sample.
+
+5. VIVA QUESTIONS AND ANSWERS:
+------------------------------
+Q1: What is AIRS?
+A: It is an Artificial Immune System-based algorithm used for pattern recognition and classification.
+
+Q2: How does AIRS differ from k-NN?
+A: k-NN uses all training samples to make a prediction, while AIRS evolves a much smaller, more efficient set of "Memory Cells" (Detectors) to represent the data.
+
+Q3: What role does mutation play here?
+A: Mutation allows the detectors to move and cover the feature space better, ensuring they are not just exact copies of specific training points.
+
+Q4: What is a "Memory Cell" in AIS?
+A: It is a long-lived antibody that has successfully recognized an antigen in the past and is kept to recognize similar antigens in the future.
+
+Q5: What is Affinity in AIRS?
+A: Affinity is the measure of similarity between an antigen (data point) and an antibody (detector). In this code, it is measured by Euclidean distance (shorter distance = higher affinity).

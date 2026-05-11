@@ -1,0 +1,94 @@
+================================================================================
+PRACTICAL 8: DISTRIBUTED EVOLUTIONARY ALGORITHMS IN PYTHON (DEAP)
+================================================================================
+
+1. HOW TO EXECUTE THE CODE:
+---------------------------
+Step 1: Install the library: `pip install deap`
+Step 2: Run the script: `python deap_optimize.py`
+Step 3: Observe how the "Best Fitness" decreases as the population evolves towards the minimum.
+
+2. ENHANCED EXAMPLE (The "Lego" Analogy):
+-----------------------------------------
+Imagine you have a box of Lego bricks (The DEAP Library).
+- You want to build a "Robot" (The Algorithm).
+- Instead of making your own bricks (writing code for mutation, crossover, etc.), you just pick:
+  - A "Crossover" brick (`tools.cxBlend`).
+  - A "Mutation" brick (`tools.mutGaussian`).
+  - A "Selection" brick (`tools.selTournament`).
+- You snap them together in the "Toolbox", and suddenly you have a working Genetic Algorithm!
+
+3. SIMPLIFIED CONCEPT EXPLANATION:
+----------------------------------
+DEAP (Distributed Evolutionary Algorithms in Python) is a framework. Think of it as a "Toolkit" for AI. 
+
+Normally, writing a Genetic Algorithm from scratch (like we did in Pract 5) is hard because you have to write every function yourself. DEAP gives you all these tools ready-made. You just have to "register" the ones you want to use and define your goal.
+
+This practical demonstrates how to use DEAP to find the minimum point of a 3D graph (Sphere function).
+
+4. DETAILED CODE SNIPPET EXPLANATION (For Examiner):
+----------------------------------------------------
+
+[CODE]
+def eval_func(individual):
+    return sum(x**2 for x in individual),
+[EXPLANATION]
+This is our "Fitness Function". It takes an individual (a list of 3 numbers) and calculates the sum of their squares. 
+Note the comma at the end: `return ...,`. This is because DEAP expects fitness to be a "tuple" (a list of goals), even if we only have one goal.
+
+[CODE]
+creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
+creator.create("Individual", list, fitness=creator.FitnessMin)
+[EXPLANATION]
+We are "creating" new types of objects.
+1. `FitnessMin`: We tell DEAP we want to **Minimize** our score. The weight `-1.0` tells the system that a lower number is better.
+2. `Individual`: We define that each "Person" in our population will be a `list` of numbers, and they will have a `fitness` property.
+
+[CODE]
+toolbox.register("attr_float", random.uniform, -5.0, 5.0)
+toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.attr_float, n=3)
+toolbox.register("population", tools.initRepeat, list, toolbox.individual)
+[EXPLANATION]
+1. `attr_float`: A generator that picks a random number between -5 and 5.
+2. `individual`: How to build one person (repeat `attr_float` 3 times).
+3. `population`: How to build the whole group (repeat `individual` many times).
+
+[CODE]
+toolbox.register("mate", tools.cxBlend, alpha=0.5)
+toolbox.register("mutate", tools.mutGaussian, mu=0, sigma=1, indpb=0.2)
+toolbox.register("select", tools.selTournament, tournsize=3)
+[EXPLANATION]
+Here we register our "Evolutionary Operations":
+1. `mate`: Blend Crossover. It mixes parent values like mixing paint.
+2. `mutate`: Gaussian Mutation. Adds a random "shake" to the numbers.
+3. `select`: Tournament Selection. Picks the best of 3 random candidates.
+
+[CODE]
+for gen in range(20):
+    offspring = algorithms.varAnd(population, toolbox, cxpb=0.5, mutpb=0.1)
+    fitnesses = list(map(toolbox.evaluate, offspring))
+    for ind, fit in zip(offspring, fitnesses):
+        ind.fitness.values = fit
+    population = toolbox.select(offspring, k=len(population))
+[EXPLANATION]
+This is the evolution loop:
+1. `varAnd`: Creates new children using the registered mutation and crossover.
+2. `map(toolbox.evaluate, ...)`: Calculates the fitness for every new child.
+3. `toolbox.select`: Chooses the next generation from the children based on their scores.
+
+5. VIVA QUESTIONS AND ANSWERS:
+------------------------------
+Q1: What are the main components of a DEAP program?
+A: The **Creator** (defines data types), the **Toolbox** (configures operators), and the **Algorithms** (performs the evolution).
+
+Q2: What is "Tournament Selection" (`selTournament`)?
+A: It is a way to pick parents. We pick 3 random individuals and make them "fight" (compare their fitness). The winner gets to be a parent. This ensures we pick good candidates while still keeping some diversity.
+
+Q3: Why is DEAP called "Distributed"?
+A: Because it is designed to run on multiple CPUs or even multiple computers at the same time, making it very fast for large-scale optimization.
+
+Q4: What is the benefit of using `weights=(-1.0,)` in the creator?
+A: The tuple allows for "Multi-objective optimization". If we had two goals (e.g., minimize cost AND maximize speed), we could use `weights=(-1.0, 1.0)`. Here, we only have one goal: minimize.
+
+Q5: What is the role of the 'Toolbox'?
+A: It acts as a central configuration hub where you link specific functions (like Gaussian mutation) to generic names (like "mutate"), making the code very clean and flexible.

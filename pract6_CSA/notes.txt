@@ -1,0 +1,96 @@
+================================================================================
+PRACTICAL 6: CLONAL SELECTION ALGORITHM (CSA)
+================================================================================
+
+1. HOW TO EXECUTE THE CODE:
+---------------------------
+Step 1: Install numpy: `pip install numpy`
+Step 2: Run the script: `python csa.py`
+Step 3: Observe the "Best Fitness" value. Since we are minimizing the Sphere function, the value should get closer to 0 in every generation.
+
+2. ENHANCED EXAMPLE (The "Virus Defense" Analogy):
+--------------------------------------------------
+Imagine your body is attacked by a virus (The Problem). Your immune system needs to create a specific "Key" (Antibody) to stop it.
+
+1. INITIALIZATION: Your body starts with 20 random keys.
+2. AFFINITY: You test each key. Some fit the virus a little bit, some don't fit at all.
+3. CLONING: You take the keys that fit best. You make 50 copies (clones) of the absolute best key, but only 2 copies of the 10th best key.
+4. HYPERMUTATION: You take these clones and "jiggle" them slightly (change their shape) to see if you can make them fit even better.
+5. SELECTION: You repeat this until you have a perfect key that kills the virus!
+
+3. SIMPLIFIED CONCEPT EXPLANATION:
+----------------------------------
+Clonal Selection Algorithm (CSA) is inspired by the human immune system. It is used to find the best possible answer to an optimization problem.
+
+The main idea is: "The better a solution is, the more we should copy it and try slight variations of it to find an even better version."
+
+Key Phases:
+- Affinity: Measuring how good a solution is (Fitness).
+- Cloning: Copying the good solutions (Reproduction).
+- Mutation: Changing the copies slightly (Exploration).
+
+4. DETAILED CODE SNIPPET EXPLANATION (For Examiner):
+----------------------------------------------------
+
+[CODE]
+def objective_function(x):
+    return np.sum(x**2)
+[EXPLANATION]
+This is our "Target". It's called the Sphere Function. We want to find a list of numbers `x` such that when you square them and add them up, the total is as close to 0 as possible. (The best answer is all zeros).
+
+[CODE]
+def initialize_population():
+    return [np.random.uniform(LOWER_BOUND, UPPER_BOUND, DIM) for _ in range(POP_SIZE)]
+[EXPLANATION]
+This creates our first batch of random solutions. We generate `POP_SIZE` (20) antibodies, where each antibody is a list of 5 random numbers within our search range.
+
+[CODE]
+def calculate_affinity(population):
+    return [(antibody, objective_function(antibody)) for antibody in population]
+[EXPLANATION]
+"Affinity" in biology is how well an antibody binds to a virus. In our code, it is how well our numbers solve the math problem. We calculate the score for every "antibody" in our population.
+
+[CODE]
+def select_best(pop_affinity):
+    pop_affinity.sort(key=lambda x: x[1])
+    return pop_affinity[:POP_SIZE // 2]
+[EXPLANATION]
+This is "Natural Selection". We sort the population by their fitness score and keep only the top half (best solutions). Only these winners will be allowed to produce clones.
+
+[CODE]
+def clone(selected):
+    for antibody, affinity in selected:
+        num_clones = int(CLONE_FACTOR / (affinity + 1e-6))
+        for _ in range(num_clones):
+            clones.append(np.copy(antibody))
+[EXPLANATION]
+This is the heart of CSA.
+1. `affinity + 1e-6`: We add a tiny number to avoid dividing by zero.
+2. `CLONE_FACTOR / affinity`: This means that if the affinity (error) is very LOW, the number of clones will be very HIGH. Fitter solutions get cloned more!
+
+[CODE]
+def mutate(clones):
+    if random.random() < MUTATION_RATE:
+        noise = np.random.normal(0, 0.5, DIM)
+        clone = clone + noise
+        clone = np.clip(clone, LOWER_BOUND, UPPER_BOUND)
+[EXPLANATION]
+1. `noise`: We add random small numbers to our clones. This is "Hypermutation". It allows the algorithm to explore the space around the best solutions.
+2. `np.clip`: If the mutation pushes the numbers outside our allowed range (like -5 to 5), we force them back inside.
+
+5. VIVA QUESTIONS AND ANSWERS:
+------------------------------
+Q1: What is the primary inspiration for CSA?
+A: The theory of clonal selection in immunology, which explains how the immune system produces specific antibodies to counter antigens.
+
+Q2: What is the relationship between affinity and cloning?
+A: High affinity (better solutions) results in a larger number of clones being produced.
+
+Q3: What is "Affinity Maturation"?
+A: It is the process where the population of antibodies improves over generations through cloning and hypermutation.
+
+Q4: What is the difference between GA and CSA?
+A: GA uses crossover between two parents, while CSA focuses on cloning and mutating individuals based on their own fitness.
+
+Q5: What is the Sphere function?
+A: A common test function for optimization, defined as f(x) = Σ(x_i^2).

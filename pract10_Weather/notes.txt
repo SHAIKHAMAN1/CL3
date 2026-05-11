@@ -1,0 +1,92 @@
+================================================================================
+PRACTICAL 10: WEATHER DATA ANALYSIS USING MAPREDUCE
+================================================================================
+
+1. HOW TO EXECUTE THE CODE:
+---------------------------
+Step 1: Open your terminal.
+Step 2: Run the following command (PowerShell):
+        Get-Content weather_data.csv | python mapper.py | sort | python reducer.py
+
+2. ENHANCED EXAMPLE (The "Survey" Analogy):
+-------------------------------------------
+Imagine you want to find the average height of students in a school, class-wise (e.g., 2020, 2021).
+
+1. THE MAPPER (The Data Collectors): You hire 10 people. They go to classrooms. For every student, they write "Year 2020: 160cm" on a small slip of paper.
+2. THE SORT (The Organizer): You take all those thousands of slips and put them in a line. Because you "sort" them, all "2020" slips appear first, then all "2021" slips.
+3. THE REDUCER (The Calculator): You give the stack of "2020" slips to a person with a calculator. They add up the heights and divide by the number of slips to get the average. Then they find which stack was the tallest.
+
+3. SIMPLIFIED CONCEPT EXPLANATION:
+----------------------------------
+Hadoop-style MapReduce is used to process huge amounts of data (Big Data) that are too big for one computer's memory. 
+
+In this weather practical:
+- We have a CSV file with years and temperatures.
+- **MAPPER**: Extracts the "Year" and "Temperature" from every row.
+- **SORT**: Groups all temperatures from the same year together.
+- **REDUCER**: Calculates the average temperature for each year and finds the Coolest and Hottest years overall.
+
+4. DETAILED CODE SNIPPET EXPLANATION (For Examiner):
+----------------------------------------------------
+
+--- MAPPER (mapper.py) ---
+
+[CODE]
+for line in sys.stdin:
+    line = line.strip()
+    if line.startswith("year"):
+        continue
+[EXPLANATION]
+1. `sys.stdin`: Reads the data line-by-line as it is piped in from the CSV file.
+2. `startswith("year")`: This is very important. It skips the very first line of the CSV (the header) so we don't try to calculate the temperature of the word "temperature".
+
+[CODE]
+parts = line.split(",")
+year = parts[0].strip()
+temp = float(parts[1].strip())
+print(f"{year}\t{temp}")
+[EXPLANATION]
+1. `split(",")`: Breaks each comma-separated line into two pieces: Year and Temperature.
+2. `float(temp)`: Converts the temperature string (like "30.5") into a real number.
+3. `print(...)`: Outputs the "Key" (Year) and "Value" (Temperature) separated by a Tab. This is the standard MapReduce output format.
+
+--- REDUCER (reducer.py) ---
+
+[CODE]
+for line in sys.stdin:
+    year, temp = line.split("\t")
+    if year not in year_temps:
+        year_temps[year] = []
+    year_temps[year].append(float(temp))
+[EXPLANATION]
+1. `split("\t")`: Reads the incoming lines from the sorted mapper output.
+2. `year_temps`: A dictionary where each Key is a Year, and the Value is a **LIST** of all temperatures seen for that year. We append every temperature to the list.
+
+[CODE]
+for year, temps in year_temps.items():
+    avg_temps[year] = sum(temps) / len(temps)
+[EXPLANATION]
+Once all data is read, we iterate through our dictionary and calculate the average for each year (Total Temperature / Number of Records).
+
+[CODE]
+coolest_year = min(avg_temps, key=avg_temps.get)
+hottest_year = max(avg_temps, key=avg_temps.get)
+[EXPLANATION]
+These functions look at all the averages we just calculated and find the year that has the lowest (min) and highest (max) average temperature.
+
+5. VIVA QUESTIONS AND ANSWERS:
+------------------------------
+Q1: Why is MapReduce suitable for weather data?
+A: Weather data is massive (collected every minute for decades). MapReduce can process this data in parallel across multiple servers, making it much faster.
+
+Q2: What is the key and value in the mapper output?
+A: The **Key** is the 'Year' and the **Value** is the 'Temperature'.
+
+Q3: Why do we use `try-except` in the mapper/reducer?
+A: Real-world data is often "dirty" (missing values or typos). The `try-except` ensures that if one line is broken, the program just skips it instead of crashing.
+
+Q4: What is the benefit of the "Sort" phase?
+A: It ensures that all data for the same year arrives at the Reducer together. This allows the Reducer to process one year completely before moving to the next.
+
+Q5: Can we find the Maximum temperature of all time using this?
+A: Yes. We would simply change the reducer logic to use `max()` on the list of all temperatures instead of calculating the average.
